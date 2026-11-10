@@ -403,7 +403,10 @@ function examples(){const q=li(),n=Date.now(),I=a=>a.map(([x,y])=>({q:x,n:y})),E
 [["Kladdkaka","Swedish sticky chocolate cake"],"bak",35,8,[[["100 g","smör"],["2","ägg"],["2½ dl","socker"],["1½ dl","vetemjöl"],["4 msk","kakao"],["2 tsk","vaniljsocker"],["½ tsk","salt"]],[["100 g","butter"],["2","eggs"],["2½ dl","sugar"],["1½ dl","plain flour"],["4 tbsp","cocoa"],["2 tsp","vanilla sugar"],["½ tsp","salt"]]],[["Sätt ugnen på 175 °C. Smält smöret och låt svalna lite.","Rör ihop ägg och socker. Blanda i resten av ingredienserna och smöret.","Häll i en smord form och baka i 20–25 minuter. Kakan ska vara kladdig i mitten."],["Heat the oven to 175 °C. Melt the butter and let it cool slightly.","Stir together eggs and sugar. Mix in the other ingredients and the butter.","Pour into a greased tin and bake for 20–25 minutes. The middle should stay sticky."]],[["choklad","fika"],["chocolate","fika"]],"",true],
 [["Enkla frallor","Easy bread rolls"],"brod",60,12,[[["25 g","jäst"],["3 dl","ljummet vatten"],["1 tsk","salt"],["1 msk","olja"],["7 dl","vetemjöl"]],[["25 g","fresh yeast"],["3 dl","lukewarm water"],["1 tsp","salt"],["1 tbsp","oil"],["7 dl","plain flour"]]],[["Smula jästen i en bunke och rör ut den i vattnet. Blanda i salt, olja och nästan allt mjöl.","Knåda degen i 5 minuter och låt den jäsa under bakduk i 30 minuter.","Forma 12 frallor, låt jäsa i 15 minuter och grädda i 225 °C i 10–12 minuter."],["Crumble the yeast into a bowl and stir into the water. Mix in salt, oil and most of the flour.","Knead for 5 minutes and let rise under a cloth for 30 minutes.","Shape 12 rolls, let rise for 15 minutes and bake at 225 °C for 10–12 minutes."]],[["vegetariskt"],["vegetarian"]],"",false]];
 return E.map((e,i)=>({id:"ex"+i,ex:true,title:e[0][q],cat:e[1],time:e[2],por:e[3],ings:I(e[4][q]),steps:e[5][q],tags:e[6][q],note:e[7],links:[],last:i<2?isoOf(new Date(n-(i+1)*864e5)):"",fav:e[8],at:n-i*864e5,up:n-i*864e5}))}
-function seedExample(){R=examples();exampleMode=true}
+/* Example recipes you delete stay deleted: their ids are kept with your data, and mirrored here so they never flash back on start. */
+const HKEY="matkoll.exHidden";let HIDDEN=new Set();try{const h=JSON.parse(localStorage.getItem(HKEY)||"[]");if(Array.isArray(h))HIDDEN=new Set(h.filter(x=>typeof x==="string"))}catch(e){}
+function keepHidden(){try{if(HIDDEN.size)localStorage.setItem(HKEY,JSON.stringify([...HIDDEN]));else localStorage.removeItem(HKEY)}catch(e){}}
+function seedExample(){R=examples().filter(r=>!HIDDEN.has(r.id));exampleMode=true}
 
 /* The form keeps one draft for a new recipe on this device, so nothing is lost when switching tabs. */
 const DKEY="matkoll.draft";
@@ -500,7 +503,7 @@ function arkLabel(n){return n?t("hits",n):t("emptyS")}
 function renderPile(){$("h_pile").innerHTML=CATS.map((c,i)=>{const n=R.filter(r=>r.cat===c[0]).length;return `<button class="ark" data-kat="${c[0]}" style="--a:${CCOL[c[0]]};--i:${i};--r:${ROT[i]}deg">${HOLES(3)}<span><h3>${esc(c[1+li()])}</h3><span class="cnt">${esc(arkLabel(n))}</span></span>${dood(c[0])}</button>`}).join("")}
 function rkHtml(r,via){const n=r.ings.length,sm=[catN(r.cat),n?(n===1?t("ing1"):t("ingN",n)):""].filter(Boolean).join(" · "),hit=via?`<small><mark>${esc(via.c?t("cookOn",shortDate(via.c)):via.l?t("linkedL"):via.i?t("withIng",via.i):t("inSteps"))}</mark></small>`:"";return `<button class="rk" data-open="${esc(r.id)}"><span class="dot" style="--a:${CCOL[r.cat]}">${dood(r.cat,"x0")}</span><span><b>${esc(r.title)}</b><small>${esc(sm)}</small>${hit}</span><span class="rkm">${r.time?mins(r.time):""}${r.fav?HEART:""}</span></button>`}
 function emptyHtml(title,text,btn){return `<div class="empty"><b>${esc(title)}</b><span>${esc(text)}</span>${btn||""}</div>`}
-function renderHome(){$("h_ex").classList.toggle("hide",!exampleMode);const q=Q.trim();$("q_x").classList.toggle("hide",!Q);$("h_home").classList.toggle("hide",!!q);$("h_res").classList.toggle("hide",!q);renderPile();if(!q)return;const L=SCOPE==="home"?found():[];$("h_res").innerHTML=`<p class="hits">${esc(t("hits",L.length))}</p>`+(L.length?`<div class="rks">${L.map(x=>rkHtml(x.r,x.via)).join("")}</div>`:emptyHtml(t("noHitT"),t("noHitS")))}
+function renderHome(){$("h_ex").classList.toggle("hide",!exampleMode||!R.length);const q=Q.trim();$("q_x").classList.toggle("hide",!Q);$("h_home").classList.toggle("hide",!!q);$("h_res").classList.toggle("hide",!q);renderPile();if(!q)return;const L=SCOPE==="home"?found():[];$("h_res").innerHTML=`<p class="hits">${esc(t("hits",L.length))}</p>`+(L.length?`<div class="rks">${L.map(x=>rkHtml(x.r,x.via)).join("")}</div>`:emptyHtml(t("noHitT"),t("noHitS")))}
 const filterN=()=>(FT?1:0)+(FFAV?1:0)+(FNEW?1:0)+FTAGS.size;
 const scopeName=()=>FC==="fav"?t("nF"):FC?catN(FC):t("allR");
 const scopeRecs=()=>R.filter(r=>FC==="fav"?r.fav:!FC||r.cat===FC);
@@ -543,6 +546,7 @@ function renderDetail(){if(tab!=="d")return;const r=R.find(x=>x.id===CUR);if(!r)
 function turn(dir){const o=ctxList(),i=o.findIndex(r=>r.id===CUR),n=o[i+dir];if(!n||tab!=="d")return;CUR=n.id;DP2=n.por;CI=new Set();CS=new Set();renderDetail();window.scrollTo(0,0);const d=$("d");if(S.motion&&!matchMedia("(prefers-reduced-motion:reduce)").matches){d.classList.remove("flipn","flipp");void d.offsetWidth;d.classList.add(dir>0?"flipn":"flipp");setTimeout(()=>d.classList.remove("flipn","flipp"),430)}}
 /* Add a new entry at the top whenever the app changes. "to" says where Take me there should go. */
 const CHANGELOG=[
+{v:"1.8.1",d:"10 nov 2026",i:[["h","",["Raderade exempelrecept stannar borta","Deleted example recipes stay deleted"],["Exempelrecept du tar bort kommer inte tillbaka när appen startas om.","Example recipes you delete no longer come back when the app restarts."]]]},
 {v:"1.8",d:"10 nov 2026",i:[["o","",["Sparar allt direkt","Saves everything at once"],["Appen kommer ihåg var du var, vad du bockat av i receptet och vad du höll på att skriva, även om den stängs.","The app remembers where you were, what you ticked off in the recipe and what you were writing, even if it closes."]],["h","",["Mjuka övergångar","Smooth transitions"],["Sidorna glider in åt rätt håll, innehållet växer fram och markeringen i menyn glider med.","Pages slide in from the right side, content rises into place and the menu highlight glides along."]]]},
 {v:"1.7",d:"10 nov 2026",i:[["c","",["Levande bakgrund","Living background"],["En lugn bakgrund i temats färger där små ritade matbilder ritas fram, flyter runt och tonar bort. Stäng av rörelsen under Inställningar → Rörelse.","A calm background in the theme's colours where small food doodles draw themselves, float around and fade away. Turn off the movement under Settings → Motion."]]]},
 {v:"1.6",d:"9 nov 2026",i:[["h","",["Boken markerar lagat","The book marks it as cooked"],["Tryck på bok-ikonen i ett recept när du har lagat det, precis som hjärtat.","Tap the book icon on a recipe when you have cooked it, just like the heart."]]]},
@@ -638,7 +642,7 @@ async function saveForm(){const title=ED.title.trim();if(!title){toast(t("tNeedT
   FX.pulse(0);toast(col?t(was?"tChanged":"tSaved",r.title):t("tTemp"));writeDoc(r).catch(()=>toast(t("tFail")))}
 function open_(id,from){const r=R.find(x=>x.id===id);if(!r)return;CUR=id;DP2=r.por;CI=new Set();CS=new Set();BACK=from||(tab==="d"||tab==="n"?BACK:tab);go("d");render()}
 async function toggleFav(r){if(r.ex){r.fav=!r.fav;toast(t("tExFav"));render();return}r.fav=!r.fav;toast(t(r.fav?"tFav":"tUnfav"));render();writeDoc(r).catch(()=>toast(t("tFail")))}
-async function removeRec(r){if(!await ask(t("delT"),t("delP",r.title),t("delY"),t("cancel")))return;R=R.filter(x=>x!==r);if(tab==="d")go(BACK);render();toast(t("tDel",r.title));if(r.ex||!col)return;DIRTY.set(r.id,null);col.doc("rec_"+r.id).delete().catch(()=>toast(t("tDelFail"))).finally(()=>DIRTY.delete(r.id))}
+async function removeRec(r){if(!await ask(t("delT"),t("delP",r.title),t("delY"),t("cancel")))return;R=R.filter(x=>x!==r);if(ED.id===r.id){ED=DRAFT;buildForm()}if(tab==="d")go(BACK);render();toast(t("tDel",r.title));if(r.ex){HIDDEN.add(r.id);keepHidden();if(col)col.doc("hidden").set({kind:"hidden",ids:[...HIDDEN]}).catch(()=>toast(t("tDelFail")));return}if(!col)return;DIRTY.set(r.id,null);col.doc("rec_"+r.id).delete().catch(()=>toast(t("tDelFail"))).finally(()=>DIRTY.delete(r.id))}
 async function wake(on){WANT=on;try{if(on){WL=await navigator.wakeLock.request("screen");WL.addEventListener("release",()=>{WL=null})}else if(WL){await WL.release();WL=null}}catch(e){WANT=false;toast(t("tNoWake"))}renderDetail()}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&WANT&&tab==="d"&&!WL)wake(true)});
 
@@ -648,7 +652,7 @@ $("menu").onclick=()=>{$("drawer").classList.add("on");$("scrim").classList.add(
 $("q_x").onclick=()=>{Q="";$("q").value="";renderHome();$("q").focus()};
 $("f_save").onclick=saveForm;
 $("f_no").onclick=()=>{if(ED===DRAFT){if(edDirty()){dropDraft();buildForm();toast(t("tCleared"))}return}const id=ED.id;ED=DRAFT;buildForm();if(R.some(r=>r.id===id))go("d");else go("h")};
-let resetArm=false;$("reset").onclick=async()=>{if(!resetArm){resetArm=true;$("reset").textContent=t("resetAgain");setTimeout(()=>{resetArm=false;$("reset").textContent=t("reset")},4000);return}resetArm=false;$("reset").textContent=t("reset");const ids=allIds.filter(id=>id!=="plan");LINKS=[];SHOPS=[];shopFlag(false);seedExample();render();toast(t("tReset"));if(col)await Promise.all(ids.map(id=>col.doc(id).delete().catch(()=>{})))};
+let resetArm=false;$("reset").onclick=async()=>{if(!resetArm){resetArm=true;$("reset").textContent=t("resetAgain");setTimeout(()=>{resetArm=false;$("reset").textContent=t("reset")},4000);return}resetArm=false;$("reset").textContent=t("reset");const ids=allIds.filter(id=>id!=="plan");LINKS=[];SHOPS=[];shopFlag(false);HIDDEN=new Set();keepHidden();seedExample();render();toast(t("tReset"));if(col)await Promise.all(ids.map(id=>col.doc(id).delete().catch(()=>{})))};
 
 document.addEventListener("input",e=>{const x=e.target,d=x.dataset;
   if(x.id==="q"){Q=x.value;SCOPE="home";renderHome();return}
@@ -790,9 +794,10 @@ try{if(localStorage.getItem("matkoll.motion")==="0")S.motion=false}catch(e){}kee
   const db=await claude.use("db");if(!db)return;
   col=db.collection("household");renderSettings();
   col.onSnapshot(snap=>{
-    const real=snap.docs.some(d=>/^rec_|^started$/.test(d.id));allIds=snap.docs.map(d=>d.id);const old=S.lang,list=[],lnk=[],shp=[];
+    const real=snap.docs.some(d=>/^rec_|^started$/.test(d.id));allIds=snap.docs.map(d=>d.id);const old=S.lang,list=[],lnk=[],shp=[];let hid=[];
     snap.docs.forEach(d=>{const v=d.data()||{};
       if(d.id==="plan"){if(typeof v.theme==="string")S.theme=v.theme;["toasts","sound","click","motion"].forEach(k=>{if(typeof v[k]==="boolean")S[k]=v[k]});keepMotion();FX.setMotion();if(typeof v.portions==="number"&&v.portions>0)S.portions=v.portions;if(v.lang==="sv"||v.lang==="en")S.lang=v.lang}
+      else if(d.id==="hidden"){if(Array.isArray(v.ids))hid=v.ids.filter(x=>typeof x==="string")}
       else if(v.kind==="rec"&&v.id)list.push(normR(v));
       else if(v.kind==="link"&&v.id){const l=normL(v);if(l)lnk.push(l)}
       else if(v.kind==="shop"&&v.id)shp.push(normS(v))});
@@ -800,7 +805,8 @@ try{if(localStorage.getItem("matkoll.motion")==="0")S.motion=false}catch(e){}kee
     LP.forEach((l,id)=>{const i=lnk.findIndex(x=>x.id===id);if(l===null){if(i>=0)lnk.splice(i,1)}else if(i>=0)lnk[i]=l;else lnk.push(l)});LINKS=lnk;
     /* Changes still on their way to storage win over an older snapshot. */
     if(real){exampleMode=false;DIRTY.forEach((r,id)=>{const i=list.findIndex(x=>x.id===id);if(r===null){if(i>=0)list.splice(i,1)}else if(i>=0)list[i]=r;else list.push(r)});R=list}
-    else if(!exampleMode&&!DIRTY.size)seedExample();
+    HIDDEN=new Set(hid);keepHidden();
+    if(!real&&!exampleMode&&!DIRTY.size)seedExample();else if(!real&&exampleMode)R=R.filter(r=>!HIDDEN.has(r.id));
     applyTheme();if(S.lang!==old){applyLang();$("ttl").textContent=ttlOf(tab);resume();return}render();resume()},()=>{col=null;render()});
 }catch(e){}})();
 </script>

@@ -1,6 +1,6 @@
 /* Always tries the network first, so a published change shows up the next time the app opens. Falls back to the saved copy offline.
    The saved copy lives in Matkoll's own database, so no other app on the same web address can ever remove it. */
-const VER="e23e7b8ba1fa",FILES=['./', 'index.html', 'app-shell.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png'],DB="matkoll-offline";
+const VER="a4eb3345e2df",FILES=['./', 'index.html', 'app-shell.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png'],DB="matkoll-offline";
 const opendb=()=>new Promise((ok,no)=>{const q=indexedDB.open(DB,1);q.onupgradeneeded=()=>q.result.createObjectStore("f");q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)});
 const run=(mode,fn)=>opendb().then(d=>new Promise((ok,no)=>{const t=d.transaction("f",mode),r=fn(t.objectStore("f"));t.oncomplete=()=>{d.close();ok(r.result)};t.onerror=()=>{d.close();no(t.error)}}));
 const key=u=>{const x=new URL(u,location.href);return x.origin===location.origin?x.pathname.replace(/index\.html$/,""):x.href};
