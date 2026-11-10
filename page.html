@@ -238,6 +238,22 @@ nav em{font-style:normal}
 @media (max-width:379px){nav{gap:2px;padding:4px}nav button{font-size:12.5px}nav svg{width:21px;height:21px}}
 @media (max-width:359px){.ark h3{font-size:38px}.dood{width:76px;height:76px}.minis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* Transitions: pages slide in from the side you are heading to, their parts rise one after another,
+   the menu highlight glides to the new tab and the dialogs ease up. Settings → Motion turns all of it off. */
+section.go-f{animation:inF .36s cubic-bezier(.2,.85,.25,1)}section.go-b{animation:inB .36s cubic-bezier(.2,.85,.25,1)}
+@keyframes inF{from{opacity:0;translate:40px 0}}@keyframes inB{from{opacity:0;translate:-40px 0}}
+.rise{animation:rise .5s cubic-bezier(.2,.9,.3,1) backwards;animation-delay:calc(var(--k,0)*38ms + 60ms)}@keyframes rise{from{opacity:0;translate:0 18px}}
+#ttl.tt{animation:ttIn .34s cubic-bezier(.2,.9,.3,1)}@keyframes ttIn{from{opacity:0;translate:0 7px}}
+nav .ind{position:absolute;left:0;top:0;z-index:0;border-radius:15px;background:var(--lila);opacity:0;pointer-events:none;transition:opacity .2s}
+nav.anim .ind{transition:translate .44s cubic-bezier(.3,1.25,.4,1),width .44s cubic-bezier(.3,1.25,.4,1),height .44s cubic-bezier(.3,1.25,.4,1),opacity .2s}
+nav.hasind button{z-index:1}nav.hasind button.on{background:transparent}
+.heart.bump svg{animation:bump .5s cubic-bezier(.3,1.7,.4,1)}@keyframes bump{35%{scale:1.4}}
+.mbox{transition:translate .28s cubic-bezier(.2,1.2,.3,1),scale .28s cubic-bezier(.2,1.2,.3,1)}#modal:not(.on) .mbox,#fs:not(.on) .mbox{translate:0 28px;scale:.97}
+section.go-p{animation:inP .32s ease}@keyframes inP{from{opacity:0}}
+.lift{position:fixed;z-index:35;pointer-events:none;border-radius:24px}
+.lift>.la,.lift>.lb{position:absolute;inset:0;margin:0;min-height:0;width:auto;height:auto;overflow:hidden}.lift>.la{transform:none}
+.pile.picking .ark:not(.picked){opacity:.45;translate:0 26px;transition:translate .3s cubic-bezier(.3,.9,.3,1),opacity .3s,transform .2s}
+html.still *,html.still *::before,html.still *::after{animation:none!important;transition:none!important}
 </style>
 
 <canvas id="fx" aria-hidden="true"></canvas><canvas id="fx2" aria-hidden="true"></canvas><div id="toasts"></div><div id="scrim"></div>
@@ -527,6 +543,7 @@ function renderDetail(){if(tab!=="d")return;const r=R.find(x=>x.id===CUR);if(!r)
 function turn(dir){const o=ctxList(),i=o.findIndex(r=>r.id===CUR),n=o[i+dir];if(!n||tab!=="d")return;CUR=n.id;DP2=n.por;CI=new Set();CS=new Set();renderDetail();window.scrollTo(0,0);const d=$("d");if(S.motion&&!matchMedia("(prefers-reduced-motion:reduce)").matches){d.classList.remove("flipn","flipp");void d.offsetWidth;d.classList.add(dir>0?"flipn":"flipp");setTimeout(()=>d.classList.remove("flipn","flipp"),430)}}
 /* Add a new entry at the top whenever the app changes. "to" says where Take me there should go. */
 const CHANGELOG=[
+{v:"1.8",d:"10 nov 2026",i:[["o","",["Sparar allt direkt","Saves everything at once"],["Appen kommer ihåg var du var, vad du bockat av i receptet och vad du höll på att skriva, även om den stängs.","The app remembers where you were, what you ticked off in the recipe and what you were writing, even if it closes."]],["h","",["Mjuka övergångar","Smooth transitions"],["Sidorna glider in åt rätt håll, innehållet växer fram och markeringen i menyn glider med.","Pages slide in from the right side, content rises into place and the menu highlight glides along."]]]},
 {v:"1.7",d:"10 nov 2026",i:[["c","",["Levande bakgrund","Living background"],["En lugn bakgrund i temats färger där små ritade matbilder ritas fram, flyter runt och tonar bort. Stäng av rörelsen under Inställningar → Rörelse.","A calm background in the theme's colours where small food doodles draw themselves, float around and fade away. Turn off the movement under Settings → Motion."]]]},
 {v:"1.6",d:"9 nov 2026",i:[["h","",["Boken markerar lagat","The book marks it as cooked"],["Tryck på bok-ikonen i ett recept när du har lagat det, precis som hjärtat.","Tap the book icon on a recipe when you have cooked it, just like the heart."]]]},
 {v:"1.5",d:"9 nov 2026",i:[["o","",["Ny hemskärm","New home screen"],["Kategorier, dagens recept och dina favoriter på samma ställe.","Categories, the recipe of the day and your favorites in one place."]]]},
@@ -601,7 +618,7 @@ function renderSettings(){
   $("c_lg").innerHTML=[["sv","Svenska"],["en","English"]].map(([v,l])=>`<button class="chip ${S.lang===v?"on":""}" data-lang="${v}">${l}</button>`).join("");
   if(document.activeElement!==$("f_portions"))$("f_portions").value=S.portions;$("c_st").textContent=col?t("dStore"):t("dOff")}
 function applyTheme(){S.theme==="auto"?document.documentElement.removeAttribute("data-theme"):document.documentElement.setAttribute("data-theme",S.theme)}
-function keepMotion(){try{localStorage.setItem("matkoll.motion",S.motion?"1":"0")}catch(e){}}
+function keepMotion(){try{localStorage.setItem("matkoll.motion",S.motion?"1":"0")}catch(e){}keepStill()}
 function persist(){if(!col)return;col.doc("plan").set({lang:S.lang,theme:S.theme,toasts:S.toasts,sound:S.sound,click:S.click,motion:S.motion,portions:S.portions}).catch(()=>{})}
 function render(){$("ttl").textContent=ttlOf(tab);renderStart();renderHome();renderList();renderDetail();renderLinks();renderShops();renderSettings();renderVersion();verDot();shopDot()}
 
@@ -626,7 +643,7 @@ async function wake(on){WANT=on;try{if(on){WL=await navigator.wakeLock.request("
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&WANT&&tab==="d"&&!WL)wake(true)});
 
 function applyLang(){document.documentElement.lang=S.lang;document.querySelectorAll("[data-i]").forEach(e=>{e.textContent=t(e.dataset.i)});document.querySelectorAll("[data-p]").forEach(e=>{e.placeholder=t(e.dataset.p)});document.querySelectorAll("[data-a]").forEach(e=>e.setAttribute("aria-label",t(e.dataset.a)));$("back").setAttribute("aria-label",t("back"));$("reset").textContent=t("reset");if(exampleMode)seedExample();buildForm();buildLinkForm();render()}
-function go(x){FX.tab(x);if(tab==="d"&&x!=="d"&&WANT)wake(false);tab=x;if(x==="i")shopFlag(false);shopDot();if(x==="o")renderStart();if(x==="h"){SCOPE="home";renderHome()}if(x==="v")verSeen();else verDot();try{sessionStorage.setItem("matkoll.tab",x)}catch(e){}["o","h","r","n","s","i","c","d","v"].forEach(s=>$(s).classList.toggle("hide",s!==x));const lit=x==="r"?"h":x==="d"?(BACK==="o"||BACK==="i"?BACK:"h"):x;document.querySelectorAll("nav button,#drawer>button").forEach(b=>b.classList.toggle("on",b.dataset.go===lit));$("top").classList.toggle("bk",x==="d"||x==="r");$("top").classList.toggle("home",x==="o");$("drawer").classList.remove("on");$("scrim").classList.remove("on");$("ttl").textContent=ttlOf(x);if(x==="d")renderDetail();if(x==="n")setTimeout(()=>document.querySelectorAll("#f_steps textarea").forEach(grow),0);window.scrollTo(0,0)}
+function go(x){const from=tab;FX.tab(x);if(tab==="d"&&x!=="d"&&WANT)wake(false);tab=x;if(x==="i")shopFlag(false);shopDot();if(x==="o")renderStart();if(x==="h"){SCOPE="home";renderHome()}if(x==="v")verSeen();else verDot();try{sessionStorage.setItem("matkoll.tab",x)}catch(e){}["o","h","r","n","s","i","c","d","v"].forEach(s=>$(s).classList.toggle("hide",s!==x));const lit=x==="r"?"h":x==="d"?(BACK==="o"||BACK==="i"?BACK:"h"):x;document.querySelectorAll("nav button,#drawer>button").forEach(b=>b.classList.toggle("on",b.dataset.go===lit));$("top").classList.toggle("bk",x==="d"||x==="r");$("top").classList.toggle("home",x==="o");$("drawer").classList.remove("on");$("scrim").classList.remove("on");$("ttl").textContent=ttlOf(x);if(x==="d")renderDetail();if(x==="n")setTimeout(()=>document.querySelectorAll("#f_steps textarea").forEach(grow),0);window.scrollTo(0,0);animGo(from,x)}
 $("menu").onclick=()=>{$("drawer").classList.add("on");$("scrim").classList.add("on")};$("scrim").onclick=()=>{$("drawer").classList.remove("on");$("scrim").classList.remove("on")};$("back").onclick=()=>go(tab==="r"?"h":BACK);
 $("q_x").onclick=()=>{Q="";$("q").value="";renderHome();$("q").focus()};
 $("f_save").onclick=saveForm;
@@ -653,7 +670,7 @@ document.addEventListener("click",e=>{
   const g=e.target.closest("[data-go]");if(g){go(g.dataset.go);if(g.dataset.to)setTimeout(()=>focusTo(g.dataset.to),60);return}
   const o=e.target.closest("[data-open]");if(o){open_(o.dataset.open);return}
   if(e.target.closest("#d_prev")){turn(-1);return}if(e.target.closest("#d_next")){turn(1);return}
-  const k=e.target.closest("[data-kat]");if(k){openCat(k.dataset.kat);return}
+  const k=e.target.closest("[data-kat]");if(k){if(k.matches(".pile .ark")&&pickArk(k))return;openCat(k.dataset.kat);return}
   if(e.target.closest("#d_shop")){const r=R.find(x=>x.id===CUR);if(!r)return;if(SHOPS.some(x=>x.rid===r.id))go("i");else createShop(r);return}
   const si=e.target.closest("[data-si]");if(si){const[a,b]=si.dataset.si.split("|"),l=SHOPS.find(x=>x.id===a);if(l&&l.items[+b]){l.items[+b].done=!l.items[+b].done;renderShops();saveShop(l)}return}
   const sd=e.target.closest("[data-sdel]");if(sd){const l=SHOPS.find(x=>x.id===sd.dataset.sdel);if(l)removeShop(l);return}
@@ -682,10 +699,10 @@ document.addEventListener("click",e=>{
   const ic=e.target.closest("[data-ic]");if(ic){const i=+ic.dataset.ic;CI.has(i)?CI.delete(i):CI.add(i);renderDetail();return}
   const st=e.target.closest("[data-st]");if(st){const i=+st.dataset.st;CS.has(i)?CS.delete(i):CS.add(i);renderDetail();return}
   const r=R.find(x=>x.id===CUR);
-  if(r&&e.target.closest("#d_fav,#d_fav2")){toggleFav(r);return}
+  if(r&&e.target.closest("#d_fav,#d_fav2")){toggleFav(r);bump("d_fav",r.fav);return}
   if(r&&e.target.closest("#d_edit")){openEdit(r);return}
   if(r&&e.target.closest("#d_del")){removeRec(r);return}
-  if(r&&e.target.closest("#d_cook")){toggleCooked(r);return}
+  if(r&&e.target.closest("#d_cook")){toggleCooked(r);bump("d_cook",!!r.last);return}
   if(e.target.closest("#d_wake")){wake(!WANT);return}
   if(r&&e.target.closest("#d_less")){DP2=Math.max(1,DP2-1);renderDetail();return}
   if(r&&e.target.closest("#d_more")){DP2=Math.min(99,DP2+1);renderDetail();return}
@@ -702,8 +719,72 @@ $("d").addEventListener("touchstart",e=>{if(e.touches.length===1)SW=[e.touches[0
 $("d").addEventListener("touchend",e=>{if(!SW)return;const c=e.changedTouches[0],dx=c.clientX-SW[0],dy=c.clientY-SW[1];SW=null;if(Math.abs(dx)>70&&Math.abs(dx)>1.8*Math.abs(dy))turn(dx<0?1:-1)},{passive:true});
 document.addEventListener("keydown",e=>{if(tab!=="d"||e.altKey||e.ctrlKey||e.metaKey||e.target.closest("input,textarea")||document.querySelector("#modal.on,#fs.on"))return;if(e.key==="ArrowRight")turn(1);else if(e.key==="ArrowLeft")turn(-1)});
 
+/* Remembers where you are and what you were doing after every tap, keystroke and scroll,
+   so the app opens the same way again: the open recipe, ticked ingredients and steps, portions,
+   half-written edits and links, filters and how far down you were. Recipes themselves are saved the moment they change. */
+const MKEY="matkoll.state",MAXAGE=6*36e5;
+let PEND=null,calm=true,memT=0,PICKING=false;
+function remember(){try{localStorage.setItem(MKEY,JSON.stringify({at:Date.now(),tab,cur:CUR,back:BACK,fc:FC,scope:SCOPE,sort:SORT,ft:FT,ffav:FFAV,fnew:FNEW,ftags:[...FTAGS],q:Q,y:Math.round(window.scrollY),por:DP2,ci:[...CI],cs:[...CS],ed:ED!==DRAFT?ED:null,le:LE&&(LE.id||LE.url||LE.title||LE.note)?LE:null}))}catch(e){}}
+function recall(){try{const m=JSON.parse(localStorage.getItem(MKEY)||"null");if(m&&typeof m==="object"&&Date.now()-(+m.at||0)<MAXAGE)return m}catch(e){}return null}
+const soon=()=>{clearTimeout(memT);memT=setTimeout(remember,120)};
+["click","input","change","keyup"].forEach(k=>document.addEventListener(k,soon,true));
+addEventListener("scroll",soon,{passive:true});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)remember()});
+addEventListener("pagehide",remember);
+const isTab=v=>typeof v==="string"&&v.length===1&&"ohnsicvr".includes(v);
+/* Puts back everything that does not need the recipes; an open recipe waits for them in resume(). */
+function restore(){const m=recall();if(!m)return "o";
+  FC=typeof m.fc==="string"?m.fc:"";SCOPE=m.scope==="cat"?"cat":"home";if(typeof m.sort==="string")SORT=m.sort;FT=+m.ft||0;FFAV=!!m.ffav;FNEW=!!m.fnew;FTAGS=new Set(Array.isArray(m.ftags)?m.ftags.filter(x=>typeof x==="string"):[]);
+  Q=typeof m.q==="string"?m.q:"";$("q").value=Q;$("q_x").classList.toggle("hide",!Q);
+  if(m.le&&typeof m.le==="object"){LE={...blankL(),...m.le};buildLinkForm()}
+  const e=m.ed;if(e&&typeof e==="object"&&typeof e.title==="string"&&Array.isArray(e.ings)&&Array.isArray(e.steps)){ED={...blank(),...e};buildForm()}
+  if(isTab(m.back))BACK=m.back;
+  if(m.tab==="d"&&m.cur){PEND=m;return isTab(m.back)&&!(m.back==="r"&&!FC)?m.back:"o"}
+  if(m.tab==="r"&&!FC)return "o";
+  requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,+m.y||0)));
+  return isTab(m.tab)?m.tab:"o"}
+function resume(){const p=PEND;if(!p||!R.find(x=>x.id===p.cur))return;PEND=null;open_(p.cur,isTab(p.back)?p.back:undefined);
+  if(+p.por>0)DP2=Math.min(99,Math.round(+p.por));CI=new Set(Array.isArray(p.ci)?p.ci.map(Number):[]);CS=new Set(Array.isArray(p.cs)?p.cs.map(Number):[]);renderDetail();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,+p.y||0)))}
+/* Transitions. A page keeps its last slide class until the next move, because removing it would replay the plain pop.
+   Nothing moves until you touch the app, so opening it lands quietly where you left off. */
+["pointerdown","keydown"].forEach(k=>addEventListener(k,()=>{calm=false},{capture:true,once:true}));
+const moving=()=>S.motion&&!matchMedia("(prefers-reduced-motion:reduce)").matches;
+function keepStill(){document.documentElement.classList.toggle("still",!S.motion)}
+function navInd(anim){const n=document.querySelector("nav");let i=n.querySelector(".ind");if(!i){i=document.createElement("span");i.className="ind";n.prepend(i);n.classList.add("hasind")}
+  const b=n.querySelector("button.on");if(!b||!b.offsetWidth){i.style.opacity="0";return}
+  n.classList.toggle("anim",!!anim&&moving()&&i.style.opacity==="1");
+  i.style.width=b.offsetWidth+"px";i.style.height=b.offsetHeight+"px";i.style.translate=b.offsetLeft+"px "+b.offsetTop+"px";i.style.opacity="1"}
+addEventListener("resize",()=>navInd(false),{passive:true});
+const DEEP=v=>v==="d"?2:v==="r"?1:0,ORD="ohnsivc";
+function stagger(s){const flat=el=>[...el.children].flatMap(c=>c.matches(".pile,#s_list,#i_list,#h_home,.rpage")?flat(c):[c]);
+  const els=flat(s).filter(c=>c.offsetWidth&&!c.classList.contains("hide")&&!(PICKING&&c.classList.contains("cath"))).slice(0,12);
+  els.forEach(c=>c.classList.remove("rise"));void s.offsetWidth;els.forEach((c,k)=>{c.style.setProperty("--k",k);c.classList.add("rise")})}
+function animGo(from,x){navInd(!calm);if(calm||from===x||!moving())return;
+  const fwd=DEEP(x)!==DEEP(from)?DEEP(x)>DEEP(from):ORD.indexOf(x)>ORD.indexOf(from),s=$(x),tt=$("ttl");
+  s.classList.remove("go-f","go-b","go-p");tt.classList.remove("tt");void s.offsetWidth;s.classList.add(PICKING?"go-p":fwd?"go-f":"go-b");tt.classList.add("tt");
+  queueMicrotask(()=>stagger(s))}
+function bump(id,on){const b=$(id);if(!b||!on||!moving())return;b.classList.remove("bump");void b.offsetWidth;b.classList.add("bump")}
+document.addEventListener("animationend",e=>{const n=e.animationName,c=e.target.classList;if(n==="rise")c.remove("rise");else if(n==="ttIn")c.remove("tt");else if(n==="bump")c.remove("bump")});
+/* Tapping a sheet in the book picks it up: it lifts out of the pile with a shadow while the others sink back,
+   then flies up and becomes the coloured sheet at the top of that category. */
+function pickArk(btn){if(!moving()||PICKING)return false;const r0=btn.getBoundingClientRect();if(!r0.width)return false;
+  PICKING=true;const k=btn.dataset.kat,pile=$("h_pile"),rot=getComputedStyle(btn).getPropertyValue("--r").trim()||"0deg";
+  const lift=document.createElement("div"),A=btn.cloneNode(true);lift.className="lift";lift.setAttribute("aria-hidden","true");A.className="ark la";A.removeAttribute("data-kat");lift.append(A);document.body.append(lift);
+  lift.style.width=r0.width+"px";const f=lift.getBoundingClientRect().width/r0.width||1,box=r=>({left:r.left/f+"px",top:r.top/f+"px",width:r.width/f+"px",height:r.height/f+"px"});
+  Object.assign(lift.style,box(r0));btn.classList.add("picked");btn.style.visibility="hidden";pile.classList.add("picking");
+  const up={transform:"translateY(-18px) scale(1.035)",boxShadow:"0 24px 46px rgba(20,10,40,.22)"};
+  const done=()=>{lift.remove();PICKING=false};
+  lift.animate([{transform:`rotate(${rot})`,boxShadow:"0 2px 6px rgba(20,10,40,.08)"},up],{duration:240,easing:"cubic-bezier(.3,1.4,.5,1)",fill:"forwards"}).finished.then(()=>{
+    openCat(k);btn.style.visibility="";btn.classList.remove("picked");pile.classList.remove("picking");
+    const cath=document.querySelector("#r .cath"),r1=cath&&cath.getBoundingClientRect();if(!r1||!r1.width)return done();
+    cath.style.visibility="hidden";const B=cath.cloneNode(true);B.classList.add("lb");lift.append(B);
+    B.animate([{opacity:0},{opacity:0,offset:.15},{opacity:1,offset:.6},{opacity:1}],{duration:440,fill:"forwards"});
+    lift.animate([{...box(r0),...up},{...box(r1),transform:"none",boxShadow:"0 0 0 rgba(20,10,40,0)"}],{duration:440,easing:"cubic-bezier(.3,.9,.25,1)",fill:"forwards"}).finished.then(()=>{cath.style.visibility="";done()},()=>{cath.style.visibility="";done()})
+  },done);return true}
 
-seedExample();applyTheme();applyLang();let startTab="o";try{const s=sessionStorage.getItem("matkoll.tab");if(s&&"ohnsicv".includes(s))startTab=s}catch(e){}go(startTab);
+
+try{if(localStorage.getItem("matkoll.motion")==="0")S.motion=false}catch(e){}keepStill();seedExample();applyTheme();applyLang();const startTab=restore();go(startTab);if(document.fonts)document.fonts.ready.then(()=>navInd(false));if(startTab==="r")renderList();resume();
 /* One shared recipe collection, so everyone with the page sees the same recipes. The page works without storage. */
 (async()=>{try{
   const db=await claude.use("db");if(!db)return;
@@ -720,6 +801,6 @@ seedExample();applyTheme();applyLang();let startTab="o";try{const s=sessionStora
     /* Changes still on their way to storage win over an older snapshot. */
     if(real){exampleMode=false;DIRTY.forEach((r,id)=>{const i=list.findIndex(x=>x.id===id);if(r===null){if(i>=0)list.splice(i,1)}else if(i>=0)list[i]=r;else list.push(r)});R=list}
     else if(!exampleMode&&!DIRTY.size)seedExample();
-    applyTheme();if(S.lang!==old){applyLang();$("ttl").textContent=ttlOf(tab);return}render()},()=>{col=null;render()});
+    applyTheme();if(S.lang!==old){applyLang();$("ttl").textContent=ttlOf(tab);resume();return}render();resume()},()=>{col=null;render()});
 }catch(e){}})();
 </script>
