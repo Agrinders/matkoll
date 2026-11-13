@@ -9,6 +9,8 @@ const get=async u=>{const v=await run("readonly",s=>s.get(key(u)));return v?new 
 self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(Promise.all(FILES.map(f=>fetch(f,{cache:"no-cache"}).then(r=>r.ok?put(f,r):null))))});
 self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch",e=>{const r=e.request;if(r.method!=="GET")return;const u=new URL(r.url);
-  if(u.hostname==="fonts.googleapis.com"||u.hostname==="fonts.gstatic.com"){e.respondWith(get(r.url).then(m=>m||fetch(r.url,{mode:"cors"}).then(x=>{if(x.ok)put(r.url,x.clone()).catch(()=>{});return x})));return}
+  /* The Swedish text reader for recipe photos comes from fixed, never-changing versions on jsDelivr, so it is kept after the first use. */
+  const tess=u.hostname==="cdn.jsdelivr.net"&&/^\/npm\/(tesseract\.js@5\.1\.1|tesseract\.js-core@5\.1\.1|@tesseract\.js-data\/swe@1\.0\.0)\//.test(u.pathname);
+  if(tess||u.hostname==="fonts.googleapis.com"||u.hostname==="fonts.gstatic.com"){e.respondWith(get(r.url).then(m=>m||fetch(r.url,{mode:"cors"}).then(x=>{if(x.ok)put(r.url,x.clone()).catch(()=>{});return x})));return}
   if(u.origin!==location.origin)return;
   e.respondWith(fetch(r,{cache:"no-cache"}).then(x=>{if(x.ok)put(r.url,x.clone()).catch(()=>{});return x}).catch(()=>get(r.url).then(m=>m||(r.mode==="navigate"?get("./"):null)).then(m=>m||Response.error())))});

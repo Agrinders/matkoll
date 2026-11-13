@@ -265,6 +265,18 @@ section.go-p{animation:inP .32s ease}@keyframes inP{from{opacity:0}}
 .lift{position:fixed;z-index:35;pointer-events:none;border-radius:24px}
 .lift>.la,.lift>.lb{position:absolute;inset:0;margin:0;min-height:0;width:auto;height:auto;overflow:hidden}.lift>.la{transform:none}
 .pile.picking .ark:not(.picked){opacity:.45;translate:0 26px;transition:translate .3s cubic-bezier(.3,.9,.3,1),opacity .3s,transform .2s}
+/* Photo reading */
+.scan{display:flex;flex-direction:column;align-items:center;gap:2px;margin:0 0 18px}.scan .shopb{margin-top:0;display:flex;gap:9px;padding-inline:22px}.scan .shopb svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.scnote{display:flex;gap:12px;align-items:center;margin:0 0 16px;padding:10px 12px;border:2px solid var(--line);border-radius:15px;background:color-mix(in srgb,var(--lila) 45%,var(--paper))}
+.scnote b{display:block;font:500 18px/1.15 var(--hand)}.scnote span{display:block;font-size:14.5px;line-height:1.35}.scnote em{font-style:normal;font-weight:800;color:var(--bad)}
+.scimg{flex:0 0 58px;width:58px;height:72px;padding:0;border:2px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper)}.scimg img{width:100%;height:100%;object-fit:cover;display:block}
+.scfull{display:block;width:100%;max-height:70vh;object-fit:contain;border-radius:12px}
+.scwait{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 4px;text-align:center}.scwait svg{width:64px;height:64px}.scwait b{font:500 22px/1.1 var(--hand)}
+.scbar{display:block;width:100%;height:10px;border:2px solid var(--line);border-radius:99px;overflow:hidden;background:var(--paper)}.scbar u{display:block;height:100%;background:var(--lila);transition:width .3s}
+#f_title.miss{border-bottom-color:var(--bad);background:color-mix(in srgb,var(--bad) 7%,transparent)}
+.two input.miss,#f_ings.miss .lnw,#f_steps.miss .lnw{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,var(--paper))}
+#f_cats.miss .mini{border-color:var(--bad)}#f_cats.miss{border-radius:14px;box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 30%,transparent)}
+.lnw.unsure{border-color:#e39a2d;background:color-mix(in srgb,#e39a2d 10%,var(--paper))}
 html.still *,html.still *::before,html.still *::after{animation:none!important;transition:none!important}
 </style>
 <script src="app-shell.js"></script>
@@ -307,6 +319,8 @@ html.still *,html.still *::before,html.still *::after{animation:none!important;t
 
 <section id="n" class="hide">
 <div class="rpage"><div class="holes"><b></b><b></b><b></b><b></b></div>
+<div class="scan" id="n_scan"><button class="btn shopb" id="sc_cam" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.500A2 2 0 0 1 6 6.500h2l1.500-2h5l1.500 2h2a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.500" r="3.500"/></svg><span data-i="scCam"></span></button><button class="lnk" id="sc_pick" type="button" data-i="scPick"></button><input type="file" id="sc_in" accept="image/*" capture="environment" hidden><input type="file" id="sc_in2" accept="image/*" hidden></div>
+<div class="scnote hide" id="sc_note"></div>
 <input id="f_title" type="text" maxlength="90" autocomplete="off" data-p="titlePh" data-a="titlePh">
 <span class="lab" data-i="catQ"></span><div class="minis" id="f_cats"></div>
 <div class="two"><div><label for="f_time" data-i="timeL"></label><input id="f_time" type="number" inputmode="numeric" min="0"></div><div><label for="f_por" data-i="porL"></label><input id="f_por" type="number" inputmode="numeric" min="0"></div></div>
@@ -428,7 +442,7 @@ const blank=()=>({id:null,title:"",cat:"middag",time:"",por:S.portions,ings:[{q:
 let DRAFT=blank(),ED=DRAFT;
 try{const d=JSON.parse(localStorage.getItem(DKEY)||"null");if(d&&typeof d==="object"&&Array.isArray(d.ings)&&Array.isArray(d.steps)){DRAFT={...blank(),...d,id:null};ED=DRAFT}}catch(e){}
 function keepDraft(){if(ED!==DRAFT)return;try{localStorage.setItem(DKEY,JSON.stringify(DRAFT))}catch(e){}}
-function dropDraft(){DRAFT=blank();ED=DRAFT;try{localStorage.removeItem(DKEY)}catch(e){}}
+function dropDraft(){DRAFT=blank();ED=DRAFT;try{localStorage.removeItem(DKEY)}catch(e){}scanReset()}
 const edDirty=()=>ED.title.trim()||ED.tags.trim()||ED.note.trim()||ED.ings.some(i=>i.q.trim()||i.n.trim())||ED.steps.some(s=>s.trim());
 
 const THEMES=[["midnatt","Midnattssol","Midnight Sun","Lila kväll, varmt ljus","Purple evening, warm light"],["skog","Skog","Forest","Djupt grönt","Deep green"],["hav","Hav","Ocean","Ljust och havsblått","Light and sea blue"],["norrsken","Norrsken","Northern Lights","Svart natt med grönt","Black night with green"],["korsbar","Körsbär","Cherry","Ljust rosa","Soft pink"]];
@@ -560,6 +574,7 @@ function renderDetail(){if(tab!=="d")return;const r=R.find(x=>x.id===CUR);if(!r)
 function turn(dir){const o=ctxList(),i=o.findIndex(r=>r.id===CUR),n=o[i+dir];if(!n||tab!=="d")return;CUR=n.id;DP2=n.por;CI=new Set();CS=new Set();renderDetail();window.scrollTo(0,0);const d=$("d");if(S.motion&&!matchMedia("(prefers-reduced-motion:reduce)").matches){d.classList.remove("flipn","flipp");void d.offsetWidth;d.classList.add(dir>0?"flipn":"flipp");setTimeout(()=>d.classList.remove("flipn","flipp"),430)}}
 /* Add a new entry at the top whenever the app changes. "to" says where Take me there should go. */
 const CHANGELOG=[
+{v:"2.0",d:"13 nov 2026",i:[["n","",["Fota ett recept","Photograph a recipe"],["Tryck på Fota ett recept i Nytt ark. Texten läses av på telefonen och sorteras in i titel, portioner, tid, ingredienser och steg, och en kategori väljs. Det som saknas i bilden blir rött så att du kan fylla i det själv.","Tap Photograph a recipe in New sheet. The text is read on the phone and sorted into title, portions, time, ingredients and steps, and a category is chosen. Whatever is missing in the picture turns red so you can fill it in yourself."]]]},
 {v:"1.9",d:"10 nov 2026",i:[["i","",["Egna inköpslistor","Your own shopping lists"],["Tryck på Ny inköpslista och skriv eller klistra in det du behöver. Du kan döpa om listor, lägga till varor i alla listor och rensa det du bockat av.","Tap New shopping list and type or paste what you need. You can rename lists, add items to any list and clear what you have ticked."]]]},
 {v:"1.8.1",d:"10 nov 2026",i:[["h","",["Raderade exempelrecept stannar borta","Deleted example recipes stay deleted"],["Exempelrecept du tar bort kommer inte tillbaka när appen startas om.","Example recipes you delete no longer come back when the app restarts."]]]},
 {v:"1.8",d:"10 nov 2026",i:[["o","",["Sparar allt direkt","Saves everything at once"],["Appen kommer ihåg var du var, vad du bockat av i receptet och vad du höll på att skriva, även om den stängs.","The app remembers where you were, what you ticked off in the recipe and what you were writing, even if it closes."]],["h","",["Mjuka övergångar","Smooth transitions"],["Sidorna glider in åt rätt håll, innehållet växer fram och markeringen i menyn glider med.","Pages slide in from the right side, content rises into place and the menu highlight glides along."]]]},
@@ -656,15 +671,16 @@ function render(){$("ttl").textContent=ttlOf(tab);renderStart();renderHome();ren
 
 /* The form */
 function grow(el){el.style.height="auto";el.style.height=el.scrollHeight+"px"}
-function buildRows(focus){$("f_ings").innerHTML=ED.ings.map((x,i)=>`<div class="lnw"><div class="ln ing"><input class="q" id="iq_${i}" type="text" maxlength="24" autocomplete="off" data-iq="${i}" value="${esc(x.q)}" placeholder="${t("qPh")}" aria-label="${t("qPh")}"><input id="in_${i}" type="text" maxlength="80" autocomplete="off" enterkeyhint="next" data-in="${i}" value="${esc(x.n)}" placeholder="${t("nPh")}" aria-label="${t("nPh")}"><button class="x" type="button" data-di="${i}" aria-label="${t("del")}">${XI}</button></div></div>`).join("");
+function buildRows(focus){$("f_ings").innerHTML=ED.ings.map((x,i)=>`<div class="lnw${x.u?" unsure":""}"><div class="ln ing"><input class="q" id="iq_${i}" type="text" maxlength="24" autocomplete="off" data-iq="${i}" value="${esc(x.q)}" placeholder="${t("qPh")}" aria-label="${t("qPh")}"><input id="in_${i}" type="text" maxlength="80" autocomplete="off" enterkeyhint="next" data-in="${i}" value="${esc(x.n)}" placeholder="${t("nPh")}" aria-label="${t("nPh")}"><button class="x" type="button" data-di="${i}" aria-label="${t("del")}">${XI}</button></div></div>`).join("");
   $("f_steps").innerHTML=ED.steps.map((x,i)=>`<div class="lnw"><div class="ln stp"><u>${i+1}</u><textarea id="st_${i}" rows="1" maxlength="800" data-sx="${i}" placeholder="${t("stepPh")}" aria-label="${t("stepPh")} ${i+1}">${esc(x)}</textarea><button class="x" type="button" data-ds="${i}" aria-label="${t("del")}">${XI}</button></div></div>`).join("");
   document.querySelectorAll("#f_steps textarea").forEach(grow);if(focus){const e=$(focus);if(e)e.focus()}}
 function buildCats(){$("f_cats").innerHTML=CATS.map(c=>`<button type="button" class="mini ${ED.cat===c[0]?"on":""}" data-fc="${c[0]}" aria-pressed="${ED.cat===c[0]}" style="--a:${CCOL[c[0]]}">${dood(c[0],"x0")}${esc(c[1+li()])}</button>`).join("")}
-function buildForm(){$("f_title").value=ED.title;$("f_time").value=ED.time;$("f_por").value=ED.por;$("f_tags").value=ED.tags;$("f_note").value=ED.note;buildCats();buildRows();$("f_save").textContent=t(ED.id?"saveCh":"save");$("f_no").textContent=t(ED.id?"cancel":"clearF")}
+function buildForm(){$("f_title").value=ED.title;$("f_time").value=ED.time;$("f_por").value=ED.por;$("f_tags").value=ED.tags;$("f_note").value=ED.note;buildCats();buildRows();$("f_save").textContent=t(ED.id?"saveCh":"save");$("f_no").textContent=t(ED.id?"cancel":"clearF");$("n_scan").classList.toggle("hide",!!ED.id);paintMiss()}
 function openEdit(r){ED={id:r.id,ex:!!r.ex,title:r.title,cat:r.cat,time:r.time||"",por:r.por||"",ings:r.ings.length?r.ings.map(i=>({...i})):[{q:"",n:""}],steps:r.steps.length?[...r.steps]:[""],tags:r.tags.join(", "),note:r.note};buildForm();go("n")}
 function writeDoc(r){if(!col)return Promise.resolve();DIRTY.set(r.id,r);return col.doc("rec_"+r.id).set(recDoc(r)).finally(()=>DIRTY.delete(r.id))}
 function leaveExample(){if(!exampleMode)return;exampleMode=false;R=[];if(col)col.doc("started").set({kind:"started"}).catch(()=>{})}
 async function saveForm(){const title=ED.title.trim();if(!title){toast(t("tNeedTitle"));$("f_title").focus();return}
+  if(ED===DRAFT&&SCAN.miss.size&&!await ask(t("scMissT"),t("scMissP",missNames().join(", ").replace(/^./,c=>c.toUpperCase())),t("scSaveAny"),t("scFill")))return;
   const old=ED.id&&!ED.ex?R.find(x=>x.id===ED.id):null,now=Date.now(),r={id:old?old.id:newId(),title,cat:ED.cat,time:+ED.time>0?Math.round(+ED.time):0,por:+ED.por>0?Math.round(+ED.por):0,ings:ED.ings.map(i=>{const q=i.q.trim(),n=i.n.trim();return q?{q,n}:splitLine(n)}).filter(i=>i.q||i.n),steps:ED.steps.map(s=>s.trim()).filter(Boolean),tags:[...new Set(ED.tags.split(",").map(s=>s.trim()).filter(Boolean))],note:ED.note.trim(),links:old?lks(old):[],last:old?old.last:"",fav:old?old.fav:false,at:old?old.at:now,up:now};
   leaveExample();const i=R.findIndex(x=>x.id===r.id);if(i>=0)R[i]=r;else R.push(r);const was=!!old;if(ED===DRAFT)dropDraft();else ED=DRAFT;buildForm();FC=r.cat;SCOPE="cat";SORT="new";resetFilters();open_(r.id,"r");
   FX.pulse(0);toast(col?t(was?"tChanged":"tSaved",r.title):t("tTemp"));writeDoc(r).catch(()=>toast(t("tFail")))}
@@ -818,6 +834,105 @@ function pickArk(btn){if(!moving()||PICKING)return false;const r0=btn.getBoundin
     B.animate([{opacity:0},{opacity:0,offset:.15},{opacity:1,offset:.6},{opacity:1}],{duration:440,fill:"forwards"});
     lift.animate([{...box(r0),...up},{...box(r1),transform:"none",boxShadow:"0 0 0 rgba(20,10,40,0)"}],{duration:440,easing:"cubic-bezier(.3,.9,.25,1)",fill:"forwards"}).finished.then(()=>{cath.style.visibility="";done()},()=>{cath.style.visibility="";done()})
   },done);return true}
+
+/* Photo of a recipe → a new sheet. The text is read on the phone itself with Tesseract (Swedish), so the photo never
+   leaves the device; the reader (about 6 MB) is downloaded the first time and kept for offline use.
+   The text is then sorted into title, portions, time, ingredients and steps, and a category is chosen from the words.
+   Whatever the photo did not contain is marked red until it has been filled in; doubtful ingredient lines are marked orange. */
+Object.assign(T,{scCam:["Fota ett recept","Photograph a recipe"],scPick:["eller välj en bild","or choose a picture"],
+  scLoad:["Hämtar textläsaren, bara första gången …","Fetching the text reader, first time only …"],scInit:["Gör i ordning textläsaren …","Preparing the text reader …"],
+  scRead:["Läser receptet …","Reading the recipe …"],scSort:["Sorterar in i arket …","Sorting it into the sheet …"],scWait:["Läser fotot","Reading the photo"],
+  scFail:["Textläsaren kunde inte hämtas. Kontrollera internet och försök igen.","The text reader could not be fetched. Check the internet connection and try again."],
+  scNone:["Hittade ingen text i bilden. Prova ett skarpare foto rakt ovanifrån.","No text found in the picture. Try a sharper photo taken straight from above."],
+  scDone:["Inläst från fotot","Read from the photo"],scFillRed:[n=>`Fyll i ${n===1?"den röda rutan":"de röda rutorna"} själv, det fanns inte i bilden.`,n=>`Fill in the red ${n===1?"box":"boxes"} yourself, it was not in the picture.`],
+  scAllFound:["Allt hittades. Kontrollera gärna att det blev rätt.","Everything was found. Have a quick look that it is right."],scUnsure:["Orange rader var svåra att läsa.","Orange lines were hard to read."],
+  scShow:["Visa fotot","Show the photo"],scClose:["Stäng","Close"],scReplT:["Ersätta det du har skrivit?","Replace what you have written?"],scReplP:["Arket fylls i från fotot i stället.","The sheet is filled in from the photo instead."],scReplY:["Ersätt","Replace"],
+  scMissT:["Några rutor är fortfarande röda","Some boxes are still red"],scMissP:[n=>`${n} saknas fortfarande. Vill du spara ändå?`,n=>`${n} still missing. Save anyway?`],scSaveAny:["Spara ändå","Save anyway"],scFill:["Fyll i","Fill in"],
+  scF:[{title:"titel",cat:"kategori",time:"tid",por:"portioner",ings:"ingredienser",steps:"gör så här"},{title:"title",cat:"category",time:"time",por:"portions",ings:"ingredients",steps:"method"}]});
+const SCAN={miss:new Set(),url:"",worker:null};
+const TESS={js:"https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js",worker:"https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js",core:"https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1",lang:"https://cdn.jsdelivr.net/npm/@tesseract.js-data/swe@1.0.0/4.0.0_best_int"};
+const missNames=()=>{const F=T.scF[li()];return[...SCAN.miss].map(k=>F[k])};
+function paintMiss(){const m=SCAN.miss;$("f_title").classList.toggle("miss",m.has("title"));$("f_cats").classList.toggle("miss",m.has("cat"));$("f_time").classList.toggle("miss",m.has("time"));$("f_por").classList.toggle("miss",m.has("por"));
+  $("f_ings").classList.toggle("miss",m.has("ings"));$("f_steps").classList.toggle("miss",m.has("steps"));const b=$("sc_note");if(!b)return;
+  if(!SCAN.url&&!m.size){b.classList.add("hide");return}b.classList.remove("hide");const uns=ED.ings.some(x=>x.u);
+  b.innerHTML=`${SCAN.url?`<button class="scimg" id="sc_img" aria-label="${t("scShow")}"><img src="${SCAN.url}" alt=""></button>`:""}<div><b>${t("scDone")}</b><span>${m.size?esc(t("scFillRed",m.size))+` <em>${esc(missNames().join(", "))}</em>`:t("scAllFound")}${uns?" "+t("scUnsure"):""}</span></div>`}
+function unmiss(k){if(SCAN.miss.delete(k))paintMiss()}
+function scanReset(){SCAN.miss.clear();if(SCAN.url)URL.revokeObjectURL(SCAN.url);SCAN.url="";ED.ings.forEach(x=>delete x.u);paintMiss()}
+function loadTess(){if(window.Tesseract)return Promise.resolve();return new Promise((ok,no)=>{const s=document.createElement("script");s.src=TESS.js;s.crossOrigin="anonymous";s.onload=ok;s.onerror=()=>{s.remove();no(new Error("load"))};document.head.append(s)})}
+function scanBox(txt,p){$("fs_b").innerHTML=`<div class="scwait">${dood("dryck")}<b>${t("scWait")}</b><span id="sc_st">${esc(txt)}</span><i class="scbar"><u id="sc_bar" style="width:${Math.round((p||0)*100)}%"></u></i></div>`;$("fs").classList.add("on");$("scrim").classList.add("on")}
+function scanStep(txt,p){const s=$("sc_st"),b=$("sc_bar");if(s)s.textContent=txt;if(b)b.style.width=Math.round(Math.max(.03,p||0)*100)+"%"}
+function scanClose(){$("fs").classList.remove("on");$("scrim").classList.remove("on")}
+/* Shrinks big camera photos and makes them grey with a little extra contrast, which the reader handles best. */
+async function prepImage(file){let bmp;try{bmp=await createImageBitmap(file,{imageOrientation:"from-image"})}catch(e){bmp=await createImageBitmap(file)}
+  const k=Math.min(1,2400/Math.max(bmp.width,bmp.height)),c=document.createElement("canvas");c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);
+  const x=c.getContext("2d",{willReadFrequently:true});x.filter="grayscale(1) contrast(1.25)";x.drawImage(bmp,0,0,c.width,c.height);return c}
+async function scanFile(file){if(!file)return;if(edDirty()&&!await ask(t("scReplT"),t("scReplP"),t("scReplY"),t("cancel")))return;
+  scanBox(t(window.Tesseract&&SCAN.worker?"scRead":"scLoad"),.02);let data;
+  try{await loadTess();
+    if(!SCAN.worker)SCAN.worker=await Tesseract.createWorker("swe",1,{workerPath:TESS.worker,corePath:TESS.core,langPath:TESS.lang,gzip:true,
+      logger:m=>{const s=m.status||"";if(/recogniz/.test(s))scanStep(t("scRead"),.35+.6*(m.progress||0));else if(/initializ/.test(s))scanStep(t("scInit"),.3);else scanStep(t("scLoad"),.05+.25*(m.progress||0))}});
+    scanStep(t("scRead"),.35);const img=await prepImage(file);({data}=await SCAN.worker.recognize(img,{rotateAuto:true}));
+  }catch(e){scanClose();if(SCAN.worker){try{SCAN.worker.terminate()}catch(_){}SCAN.worker=null}toast(t("scFail"));return}
+  scanStep(t("scSort"),.97);const r=readRecipe(data,data&&data.imageWidth||0);scanClose();
+  if(!r){toast(t("scNone"));return}
+  if(SCAN.url)URL.revokeObjectURL(SCAN.url);SCAN.url=URL.createObjectURL(file);
+  ED=DRAFT;Object.assign(DRAFT,blank(),{title:r.title,cat:r.cat||"",time:r.time?String(r.time):"",por:r.por?String(r.por):"",tags:"",note:r.note,
+    ings:r.ings.length?r.ings.map(x=>({q:x.q,n:x.n,...(x.u?{u:true}:{})})):[{q:"",n:""}],steps:r.steps.length?r.steps:[""]});
+  SCAN.miss=new Set(r.miss);keepDraft();buildForm();paintMiss();window.scrollTo(0,0);FX.pulse(1);
+  setTimeout(()=>document.querySelectorAll("#f_steps textarea").forEach(grow),0)}
+/* ---- From recognised lines to a recipe ---- */
+const SC_ING=/^(ingredienser|ingrediens|ingredients?|du behöver|det här behöver du|detta behöver du|råvaror|handla)\b/i;
+const SC_GROUP=/^(fyllning|deg|deg:|sås|topping|garnering|glasyr|frosting|marinad|tillbehör|botten|smet|smuldeg|kräm|dressing|servering|till servering|glaze|kaka|botten:)\s*:?$/i;
+const SC_STEP=/^(gör så här|så gör du|gör så|instruktioner|instruktion|tillagning|tillvägagångssätt|beskrivning|metod|steg för steg|så här gör du|utförande|recept)\b/i;
+const SC_CATS=[["soppa",3,/soppa|soppan|bisque|minestrone|gazpacho|buljongsoppa|borsjtj|ramen/],["brod",3,/bröd|limpa|fralla|frallor|baguette|focaccia|surdeg|tunnbröd|knäcke|scones|grissini|ciabatta|naan|pitabröd/],
+  ["bak",3,/bulle|bullar|kaka|kakor|tårta|muffins|muffin|kladd|cookies|småkak|mazarin|biskvi|pepparkak|semla|semlor|wienerbröd|längd|sockerkaka|cupcake|brownie|cheesecake|rulltårta|chokladboll|drömmar|kolakakor|dammsugare/],
+  ["dessert",3,/glass|pannacotta|panna cotta|mousse|smulpaj|äppelpaj|crème|brûlée|tiramisu|parfait|fromage|pudding|sorbet|efterrätt|dessert|pavlova|fruktsallad|marängsviss|kräm\b/],
+  ["frukost",3,/gröt|frukost|omelett|äggröra|overnight oats|granola|müsli|musli|pannkak|plättar|våffl|frukostbowl|chiapudding|yoghurtbowl/],
+  ["dryck",3,/dryck|drink|saft|lemonad|smoothie|juice|kaffe|latte|glögg|cocktail|mocktail|varm choklad|milkshake|iste|chai|bål/],
+  ["lunch",2,/sallad|wrap|macka|smörgås|toast|quesadilla|lunch|poké|pokébowl|matlåda|paninis?|bowl/],
+  ["middag",2,/gryta|pasta|lasagne|köttbullar|biff|stek|filé|file|kyckling|lax|fisk|torsk|curry|tacos|risotto|wok|gratäng|pizza|burgare|hamburgare|korv|fläsk|nötfärs|köttfärs|middag|kotlett|schnitzel|bolognese|carbonara|paella|chili|kassler|räkor|sej|kalops/]];
+function decideCat(title,ings,steps){const T0=title.toLowerCase(),I=ings.map(x=>x.n).join(" ").toLowerCase(),S0=steps.join(" ").toLowerCase(),sc={};
+  SC_CATS.forEach(([c,w,re])=>{let s=0;if(re.test(T0))s+=w*3;const mi=I.match(new RegExp(re.source,"g"));if(mi)s+=Math.min(3,mi.length)*.6;if(re.test(S0))s+=.3;sc[c]=(sc[c]||0)+s});
+  if(/jäst/.test(I)&&/vetemjöl|rågmjöl|dinkel/.test(I)&&!/socker|kardemumma|kanel/.test(I))sc.brod+=2;
+  if(/jäst|bakpulver/.test(I)&&/socker/.test(I)&&/vetemjöl|mjöl/.test(I))sc.bak+=1.5;
+  if(/ugn|grader/.test(S0)&&/grädda/.test(S0))sc.bak+=.5;
+  const best=Object.entries(sc).sort((a,b)=>b[1]-a[1])[0];return best&&best[1]>=1.2?best[0]:""}
+function cleanLine(s){s=s.replace(/[|`´]/g," ").replace(/\s+/g," ").trim();
+  s=s.replace(/^[^\p{L}\p{N}½¼¾⅓⅔]+/u,"").replace(/^[eoa•]\s+(?=[\d½¼¾⅓⅔])/,"").replace(/^(\d+(?:[.,]\d+)?)(?=\p{L})/u,"$1 ")
+   .replace(/^(\S+ (?:dl|msk|tsk|krm|cl|ml|kg|hg))(?=\p{L}{3,})/u,"$1 ").replace(/^(\S+) (dl|msk|tsk|krm|cl|ml|kg|hg)(?=\p{L})/u,"$1 $2 ");return s.trim()}
+const metaPor=s=>{let m=s.match(/(\d+)\s*(?:[-–]\s*\d+\s*)?(portioner|portion|port\b|port\.|personer|pers\b|pers\.|bitar|bullar|st\b|skivor|biter)/i)||s.match(/(?:portioner|personer|antal|serverar|räcker till)\s*:?\s*(\d+)/i);return m?+m[1]:0};
+const metaTime=s=>{if(!/\b(min|minuter|tim|timme|timmar|h)\b/i.test(s))return 0;let h=0,m=0;const H=s.match(/(\d+(?:[.,]\d+)?)\s*(?:tim|timme|timmar|h)\b/i),M=s.match(/(\d+)\s*(?:[-–]\s*(\d+)\s*)?(?:min|minuter)\b/i);if(H)h=parseFloat(H[1].replace(",","."));if(M)m=+(M[2]||M[1]);return Math.round(h*60+m)};
+/* Lines in two columns are read as one long line; a wide gap between words splits them again, left column first. */
+function scanSegments(data,W){const out=[];for(const l of data.lines||[]){const ws=(l.words||[]).filter(w=>w.text&&w.text.trim());if(!ws.length)continue;const h=Math.max(8,l.bbox.y1-l.bbox.y0),G=[[ws[0]]];
+    for(let i=1;i<ws.length;i++){if(ws[i].bbox.x0-ws[i-1].bbox.x1>Math.max(h*2.2,W*.05))G.push([ws[i]]);else G[G.length-1].push(ws[i])}
+    G.forEach(g=>out.push({text:g.map(w=>w.text).join(" "),x0:g[0].bbox.x0,y0:l.bbox.y0,h,conf:g.reduce((a,w)=>a+w.confidence,0)/g.length,split:G.length>1}))}
+  const right=out.filter(s=>s.split&&s.x0>W*.3);if(right.length<2)return out;const sx=Math.min(...right.map(s=>s.x0))-W*.02,y0=Math.min(...out.filter(s=>s.split).map(s=>s.y0))-2;
+  const top=out.filter(s=>s.y0<y0),body=out.filter(s=>s.y0>=y0);return top.concat(body.filter(s=>s.x0<sx),body.filter(s=>s.x0>=sx))}
+function readRecipe(data,W){if(!W&&data&&data.lines&&data.lines.length)W=Math.max(...data.lines.map(l=>l.bbox.x1));
+  const segs=scanSegments(data||{},W||1000).map(s=>({...s,text:cleanLine(s.text)})).filter(s=>s.text.length>1&&/\p{L}/u.test(s.text));if(!segs.length)return null;
+  let mode="",title="",por=0,time=0,ings=[],steps=[],note=[],numbered=false,sawHead=false;const isHead=s=>{const x=s.toLowerCase().replace(/[:.]$/,"");return SC_ING.test(x)&&x.length<40?"ing":SC_STEP.test(x)&&x.length<40?"step":SC_GROUP.test(x)?"group":""};
+  const qty=s=>{const p=splitLine(s);return p.q&&p.n?p:null};
+  const firstHead=segs.findIndex(s=>isHead(s.text)==="ing"||isHead(s.text)==="step");const pre=firstHead<0?segs.slice(0,Math.min(4,segs.length)):segs.slice(0,firstHead);
+  const cand=pre.filter(s=>!metaPor(s.text)&&!metaTime(s.text)&&!qty(s.text)&&s.text.length>=3&&s.text.length<=70);
+  if(cand.length){const big=cand.reduce((a,s)=>s.h>a.h*1.12?s:a,cand[0]);title=big.text.replace(/[.:]$/,"");big.used=true}
+  for(const s of segs){if(s.used)continue;const x=s.text,hd=isHead(x);
+    if(hd==="ing"||hd==="step"){mode=hd;sawHead=true;if(hd==="step")numbered=false;const p=metaPor(x);if(p&&!por)por=p;continue}
+    if(!mode||mode==="meta"){const p=metaPor(x),tm=metaTime(x);if(p&&!por)por=p;if(tm&&!time&&x.length<60)time=tm;if(p||(tm&&x.length<60))continue}
+    if(hd==="group"&&mode!=="step"){ings.push({q:"",n:x.replace(/:?$/,":")});mode="ing";continue}
+    if(mode==="ing"||(!mode&&qty(x)&&x.length<60)){const ca=x.match(/^(ca\.?|cirka|ungefär)\s+(?=[\d½¼¾⅓⅔])/i),p=splitLine(ca?x.slice(ca[0].length):x);if(ca&&p.q)p.q="ca "+p.q;if(mode==="ing"&&x.length>70&&/[.!?]$/.test(x)&&!p.q){steps.push(x);continue}ings.push({q:p.q,n:p.n,u:s.conf<62});continue}
+    if(mode==="step"||(!mode&&x.length>=60)){const num=x.match(/^(\d{1,2})[.)]\s+(.*)$/);if(num){numbered=true;steps.push(num[2]);continue}
+      const prev=steps[steps.length-1];if(prev!==undefined&&(numbered||!/[.!?]$/.test(prev)||/^\p{Ll}/u.test(x))){steps[steps.length-1]=prev+" "+x;continue}steps.push(x);continue}
+    note.push(x)}
+  ings=ings.filter(x=>x.n||x.q).map(x=>({q:x.q.slice(0,24),n:x.n.slice(0,80),u:x.u}));steps=steps.map(s=>s.replace(/\s+/g," ").trim()).filter(Boolean);
+  const cat=decideCat(title,ings,steps),miss=[];if(!title)miss.push("title");if(!cat)miss.push("cat");if(!time)miss.push("time");if(!por)miss.push("por");if(!ings.length)miss.push("ings");if(!steps.length)miss.push("steps");
+  return{title:title.slice(0,90),cat,time,por:Math.min(por,99),ings,steps,note:note.join("\n").slice(0,1200),miss}}
+/* ---- Wiring ---- */
+$("sc_cam").onclick=()=>$("sc_in").click();$("sc_pick").onclick=()=>$("sc_in2").click();
+["sc_in","sc_in2"].forEach(id=>$(id).addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];e.target.value="";scanFile(f)}));
+document.addEventListener("click",e=>{if(e.target.closest("#sc_img")&&SCAN.url){$("fs_b").innerHTML=`<img class="scfull" src="${SCAN.url}" alt=""><button class="btn" id="sc_close">${t("scClose")}</button>`;$("fs").classList.add("on");$("scrim").classList.add("on")}
+  else if(e.target.closest("#sc_close"))scanClose();const fc=e.target.closest("[data-fc]");if(fc)unmiss("cat")});
+document.addEventListener("input",e=>{const x=e.target,d=x.dataset;if(x.id==="f_title"&&x.value.trim())unmiss("title");else if(x.id==="f_time"&&+x.value>0)unmiss("time");else if(x.id==="f_por"&&+x.value>0)unmiss("por");
+  else if(d.iq!=null||d.in!=null){const i=+(d.iq!=null?d.iq:d.in);if(ED.ings[i]&&ED.ings[i].u){delete ED.ings[i].u;const w=x.closest(".lnw");if(w)w.classList.remove("unsure");paintMiss()}if(x.value.trim())unmiss("ings")}else if(d.sx!=null&&x.value.trim())unmiss("steps")});
 
 
 try{if(localStorage.getItem("matkoll.motion")==="0")S.motion=false}catch(e){}keepStill();seedExample();applyTheme();applyLang();const startTab=restore();go(startTab);if(document.fonts)document.fonts.ready.then(()=>navInd(false));if(startTab==="r")renderList();resume();
